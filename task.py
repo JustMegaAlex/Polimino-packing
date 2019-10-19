@@ -72,9 +72,7 @@ class Table:
             for j in range(1,self.w):
                 factor += (self.table[i][j]==0)+((self.table[i][j]==1) & (self.table[i][j-1]==0))*0.5
         return factor
-        
-def newFun():
-    pass
+
 
 try:
     # initialize task
