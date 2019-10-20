@@ -73,7 +73,7 @@ class Table:
                 factor += (self.table[i][j]==0)+((self.table[i][j]==1) & (self.table[i][j-1]==0))*0.5
         return factor
 
-
+    # a comment
 try:
     # initialize task
     iniTaskList = [
