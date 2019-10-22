@@ -40,11 +40,11 @@ class Polimino:
             for i in range(1, height):
                 self.image[k] = [i, 0]
                 k += 1
-        
-    def printInfo(self):
-        print('w='+str(self.width)+' h='+str(self.height)+' num='+str(self.num)+' kind='+self.kind)
     
     def print_image(self):
+        '''
+        Выводит образ полимино
+        '''
         if self.kind == 'R':
             s = ('# '*self.width + '\n')*self.height
         else:
@@ -52,22 +52,25 @@ class Polimino:
         print(s)
         
     def rotated(self, rotation):
+        '''
+        Возвращает повернутый образ полимини
+        '''
         if not rotation:
             return self.image
         rot_image = copy.deepcopy(self.image)
-        if rotation==1 :
+        if rotation==1 :# 90
             for k in range(len(self.image)):
                 # i_rot = -j + w - 1
                 rot_image[k][0] = -self.image[k][1] + self.width - 1
                 # j_rot = i
                 rot_image[k][1] = self.image[k][0]
-        elif rotation==2 :
+        elif rotation==2 :# 180
             for k in range(len(self.image)):
                 # i_rot = -i + h - 1
                 rot_image[k][0] = -self.image[k][0] + self.height - 1
                 # j_rot = -j + w - 1
                 rot_image[k][1] = -self.image[k][1] + self.width - 1
-        elif rotation==3 :
+        elif rotation==3 :# 270
             for k in range(len(self.image)):
                 # i_rot = j
                 rot_image[k][0] = self.image[k][1]
@@ -96,6 +99,10 @@ class Table:
             self.table[i] = [0]*width
 
     def quality_factor(self):
+        '''
+        Рассчитывает и возвращает фактор, характеризующий качество размещения полимино
+        Чем меньше фактор, тем лучше
+        '''
         factor = 0
         for i in range(self.rows_involved):
             row_factor = self.table[i][0]==0
@@ -105,6 +112,9 @@ class Table:
         return factor/self.rows_involved
     
     def print_table(self):
+        '''
+        Выводит сетку стола Table
+        '''
         s = ''
         for i in range(self.rows_involved):
             for j in range(self.width): s += str(self.table[i][j])
@@ -113,6 +123,9 @@ class Table:
         print(s)
 
     def place_polimino(self, i, j, polim, rotation = 0):
+        '''
+        Размещает полимино
+        '''
         # в пределах стола?
         if rotation in [0, 2]:
             if((i+polim.height)>self.height or (j+polim.width)>self.width):
@@ -150,6 +163,9 @@ class Table:
             self.table[ii][jj] = 0
     
     def undo_placement(self):
+        '''
+        Убирает последний размещенный полимино  
+        '''
         [polim, i, j, rotation] = self.track_list.pop()[:4]
         self.rows_involved = self.track_list[-1][4]
         debug_message('undo:rows '+str(self.rows_involved),False)
@@ -157,7 +173,7 @@ class Table:
         self.undo(i, j, polim.rotated(rotation), len(polim.image))
         return i, j
 
-def debug_message(s,wait):
+def debug_message(s,wait = False):
     if(DEBUG):
         print(s)
         if(wait):

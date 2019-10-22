@@ -1,12 +1,14 @@
 #!/usr/bin/env python3.6
 # -*- coding: UTF-8 -*-
 
-from polimino_packing import Error, Polimino, Table
+from polimino_packing import Error, Polimino, Table, debug_message
 
 try:
-    from local_config import ini_task_list, DEBUG
+    from local_config import ini_task_list, DEBUG, SHOW
 except:
+    print('Warning: import ini_task_list failed, default one used')
     DEBUG = False
+    SHOW = False
     ini_task_list = [
         [4, 5],             # размеры стола[w, h]    
         
@@ -31,11 +33,9 @@ def search_free_cell(i_begin=0, j_begin=0):
     for i in range(i_begin, len(table_instance.table)):
         j_begin = j_begin*(i==i_begin)
         for j in range(j_begin, len(table_instance.table[0])):
-            # print(str(i)+' '+str(j)+' '+str(table_instance.table[i][j]))
             if table_instance.table[i][j]==0:
                 i_place = i
                 j_place = j
-                # print('found '+str(i_place)+' '+str(j_place))
                 return i_place, j_place
     return -1, -1
 
@@ -49,6 +49,10 @@ def find_next_polim(ind = 0):
             return POLIMINOS[k],k
     return None, 0
         
+def wait():
+    print('Enter any key to continue')
+    input()
+
 try:
     # создаем экземпляр стола
     table_instance = Table(width=ini_task_list[0][0], height=ini_task_list[0][1])
@@ -57,7 +61,6 @@ try:
     # заполняем список POLIMINOS
     POLIMINOS = [Polimino(l[0][0], l[0][1], l[1], 'R') for l in ini_task_list[1]]
     # число прямоугольных полимино
-    # rect_polim_number = len(ini_task_list[1])
     # L-poliminos
     POLIMINOS += [Polimino(l[0][0], l[0][1], l[1], 'L') for l in ini_task_list[2]]
     
@@ -65,7 +68,7 @@ try:
     unpacked_polims = 0 
     for poli in POLIMINOS:
         unpacked_polims += poli.num
-    print('Poliminos total:'+str(unpacked_polims))
+    debug_message('Poliminos total:'+str(unpacked_polims))
 
     # проверка:
     area = 0        # площадь полимино
@@ -79,10 +82,9 @@ try:
             area += (poli.width + poli.height - 1)*poli.num
         else:
             area += (poli.width*poli.height)*poli.num
-        print(area)
+        debug_message('Poliminos total area: '+str(area))
         if area > table_instance.area :
             raise Error('Total polimino area is larger than the table area!')
-    print('Poliminos total area: '+str(area))
 
     # сортируем полимино по наибольшему размеру: по убыванию 
     # сначала прямоугольные,  затем L
@@ -120,7 +122,6 @@ try:
     polimino,ind = find_next_polim()
 
     while unpacked_polims:
-        #print('Trying poli№ '+str(ind)+': num ='+str(polimino.num))
         # запоминаем начальную клетку
         i_mem = i_place
         j_mem = j_place
@@ -133,54 +134,45 @@ try:
                     # пробуем разместить
                     if table_instance.place_polimino(i_place, j_place, polimino, rotation):
                         new_factor = table_instance.quality_factor()    # новое значение фактора
-                        #print('factor '+str(new_factor))
-                        #table_instance.print_table()
-                        #
-                        # input()
                         if factor > new_factor:                 # стало лучше?
-                            print('new best poli')
                             factor = new_factor                                 # запоминаем фактор
                             best_poli = [i_place, j_place, polimino, rotation]    # и полимино с параметрами размещения
                         # отменяем размещение для последующего перебора
                         table_instance.undo_placement()
-                    # print('point('+str(i_place)+', '+str(j_place)+') factor '+str(factor))
-                    # input()
+
                     # ищем следующую свободную ячейку
                     i_place, j_place = search_free_cell(i_place, j_place+1)
-                    # else:print('placement faied')
+
                 # вспоминаем, откуда начинали
                 i_place = i_mem
                 j_place = j_mem
-        #print('factor ' + str(factor))
-        #polimino.print_image()
+
         # переходим к следующему полимино
         polimino, ind = find_next_polim(ind+1)
         if not polimino:   # если все полимино проверены
-            print('all polims checked')
             # если удалось разместить хотя бы один
             if best_poli:     
-                # выводим образ выбранного полимино     
-                print('poli choosed:')
-                print('factor '+str(new_factor))
-                best_poli[2].print_image()
-                print()
-                # размещаем его окончательно
+                # размещаем полимино окончательно
                 table_instance.place_polimino(best_poli[0], best_poli[1], best_poli[2], best_poli[3])
                 unpacked_polims -= 1
-                # выводим сетку стола
-                table_instance.print_table()
                 # ищем следующую свободную клетку
                 i_place, j_place = search_free_cell(i_place, j_place)
+
+                if SHOW:# показать пошаговое выполнение
+                    debug_message('factor '+str(new_factor))
+                    print('poli choosed:')
+                    best_poli[2].print_image()
+                    # выводим сетку стола
+                    table_instance.print_table()
+                    print()
+                    wait()
 
                 best_poli = []
                 factor = factor_big_value
                 ind = 0
                 polimino,ind = find_next_polim()
-                input()
-
             # в противном случае ищем следующую свободную клетку
             else:
-                #print('next point')
                 i_place, j_place = search_free_cell(i_place, j_place+1)
                 if i_place < 0:
                     raise Error('Table is full',True)

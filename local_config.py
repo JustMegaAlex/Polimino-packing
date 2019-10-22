@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 DEBUG = False
+SHOW = True
 
 ini_task_list = [
         [5, 5],             # размеры стола[w, h]    
