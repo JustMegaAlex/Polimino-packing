@@ -134,6 +134,9 @@ try:
                     # пробуем разместить
                     if table_instance.place_polimino(i_place, j_place, polimino, rotation):
                         new_factor = table_instance.quality_factor()    # новое значение фактора
+                        print('factor '+str(new_factor))
+                        table_instance.print_table()
+                        wait()
                         if factor > new_factor:                 # стало лучше?
                             factor = new_factor                                 # запоминаем фактор
                             best_poli = [i_place, j_place, polimino, rotation]    # и полимино с параметрами размещения
