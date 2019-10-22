@@ -129,14 +129,16 @@ try:
         # перебираем все повороты одного полимино
         # в каждой клетке задействованных строк
         if polimino:
-            for rotation in range(4):
-                while not(i_place < 0):    # см search_free_cell()
+            for rotation in range(4 - 3*(polimino.kind == 'S') - 2*(polimino.kind == 'R')):      # для квадрата только одна попытка
+                while not(i_place < 0):    # см search_free_cell()  # для прямоугольника - две
                     # пробуем разместить
                     if table_instance.place_polimino(i_place, j_place, polimino, rotation):
                         new_factor = table_instance.quality_factor()    # новое значение фактора
-                        print('factor '+str(new_factor))
-                        table_instance.print_table()
-                        wait()
+                        #print('new_factor '+str(new_factor))
+                        #print('factor '+str(factor))
+                        #print('rows ' + str(table_instance.rows_involved))
+                        #table_instance.print_table()
+                        #wait()
                         if factor > new_factor:                 # стало лучше?
                             factor = new_factor                                 # запоминаем фактор
                             best_poli = [i_place, j_place, polimino, rotation]    # и полимино с параметрами размещения

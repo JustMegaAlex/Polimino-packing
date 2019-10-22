@@ -24,7 +24,8 @@ class Polimino:
         self.image = {}     # образ полимино, для добавления в table
         k = 0
         if(kind == 'R'):                     # прямоугольный
-            if(height==width):kind = 'S'
+            if(height==width):
+                self.kind = 'S'
             if self.height > self.width:
                 self.width, self.height = self.height, self.width
             for i in range(self.height):
@@ -61,21 +62,21 @@ class Polimino:
         if rotation==1 :# 90
             for k in range(len(self.image)):
                 # i_rot = -j + w - 1
-                rot_image[k][0] = -self.image[k][1] + self.width - 1
+                rot_image[k][0] = -self.image[k][1]# + self.width - 1
                 # j_rot = i
                 rot_image[k][1] = self.image[k][0]
         elif rotation==2 :# 180
             for k in range(len(self.image)):
                 # i_rot = -i + h - 1
-                rot_image[k][0] = -self.image[k][0] + self.height - 1
+                rot_image[k][0] = -self.image[k][0]# + self.height - 1
                 # j_rot = -j + w - 1
-                rot_image[k][1] = -self.image[k][1] + self.width - 1
+                rot_image[k][1] = -self.image[k][1]# + self.width - 1
         elif rotation==3 :# 270
             for k in range(len(self.image)):
                 # i_rot = j
                 rot_image[k][0] = self.image[k][1]
                 # j_rot = -i + h - 1
-                rot_image[k][1] = -self.image[k][0] + self.height - 1
+                rot_image[k][1] = -self.image[k][0]# + self.height - 1
         else: 
             raise Error('Polimino.rotated: wrong rotation argument')
         return rot_image
@@ -126,25 +127,27 @@ class Table:
         '''
         Размещает полимино
         '''
-        # в пределах стола?
-        if rotation in [0, 2]:
-            if((i+polim.height)>self.height or (j+polim.width)>self.width):
-                # print('outside the table')
-                return  False
-        else:
-            if((i+polim.width)>self.height or (j+polim.height)>self.width):
-                # print('outside the table')
-                return  False
-
         # вставка образа в table
         image = polim.rotated(rotation)
+        # запоминаем rows_involved
+        rows_involved_mem = self.rows_involved
         for k in range(len(image)): # image - это словарь
             # координаты клеток,  размещаемых на столе
-            ii = i + image[k][0]   
+            ii = i + image[k][0]
+            if (ii < 0) or (ii >= self.height):
+                self.undo(i, j, image, k)
+                self.rows_involved = rows_involved_mem
+                return False
+
             jj = j + image[k][1]
+            if (jj<0) or (jj>=self.width):
+                self.undo(i, j, image, k)
+                self.rows_involved = rows_involved_mem
+                return False
+
             if self.table[ii][jj]:
                 self.undo(i, j, image, k)
-                # print(str(ii)+' '+str(jj))
+                self.rows_involved = rows_involved_mem
                 return False
             self.table[ii][jj] = 1
             self.rows_involved = max(ii+1, self.rows_involved)
