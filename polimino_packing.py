@@ -14,8 +14,7 @@ class Error(BaseException):
         self.signal = signal
         
 class Polimino:
-    var = 2
-    def __init__(self, width, height, num, kind):
+    def __init__(self, width = 0, height = 0, num = 0, kind = 'R'):
         self.width = width
         self.height = height          
         self.kind = kind    # 'R' - rectangular, 'L' - L-kind, 'S' - square
@@ -86,11 +85,22 @@ class Table:
         self.width = width                          # ширина стола
         self.height = height                        # высота стола   
         self.rows_involved = rows_involved    # сколько рядов затронуто при размещении
-        self.rows_packed = rows_packed        # сколько рядов заполнено
         self.table = []                     # сетка стола
         self.ini_table(width, height)
         self.area = width*height
         self.track_list = []
+        self.buffer_polim_set = []
+
+        self.solution_tree = []               # дерево решения
+        self._current = 0
+        self._polim_set = 0
+        self._children = 1
+        self._parent = 2
+        self._polim = 0
+        self._i = 1
+        self._j = 2
+        self._rot = 3
+        self._rows_inv = 4
 
     def ini_table(self, width, height):
         if width<0 or height<0:
@@ -123,10 +133,13 @@ class Table:
         s += ('0'*self.width + '\n')*(self.height - self.rows_involved)
         print(s)
 
-    def place_polimino(self, i, j, polim, rotation = 0):
+    def place_polimino(self, i, j, polim, rotation = 0, add_to_tree = False):
         '''
         Размещает полимино
         '''
+        #if not self.check_solution_tree(polim, rotation):
+        #    return False
+
         # вставка образа в table
         image = polim.rotated(rotation)
         # запоминаем rows_involved
@@ -153,7 +166,14 @@ class Table:
             self.rows_involved = max(ii+1, self.rows_involved)
         polim.num -= 1
         # print('polimono placed num='+str(polim.num))
-        self.track_list.append([polim, i, j, rotation, self.rows_involved])
+        #self.track_list.append([polim, i, j, rotation, self.rows_involved])
+        
+
+        # добавить в дерево решения
+        if add_to_tree:
+            self.add_to_solution_tree(polim, i, j, rotation, rows_involved_mem)
+        else:
+            self.buffer_polim_set = [polim, i, j, rotation, rows_involved_mem]
         #print()
         debug_message('rows '+str(self.rows_involved),False)
         # self.print()
@@ -167,14 +187,64 @@ class Table:
     
     def undo_placement(self):
         '''
-        Убирает последний размещенный полимино  
+        Убирает последний размещенный полимино
+        И создает новую ветку решения, если алгоритм зашел в тупик
         '''
-        [polim, i, j, rotation] = self.track_list.pop()[:4]
-        self.rows_involved = self.track_list[-1][4]
+        # параметры для удаления полимино со стола 
+        if self.buffer_polim_set:   # если был заполнен buffer_polim_set, значит размещение пробное
+            [polim, i, j, rotation, self.rows_involved] = self.buffer_polim_set
+            self.buffer_polim_set.clear()
+        else:                       # если buffer_polim_set пуст, значит нужна новая ветка
+            # параметры из дерева
+            [polim, i, j, rotation, self.rows_involved] = self.solution_tree[self._current][self._polim_set]
+            # поднимаемся на предыдущий узел дерева 
+            self.solution_tree_go_up()
+        # восстанавливаем значение rows_involved
         debug_message('undo:rows '+str(self.rows_involved),False)
         polim.num += 1
         self.undo(i, j, polim.rotated(rotation), len(polim.image))
         return i, j
+
+    def check_solution_tree(self, polim, rotation):
+        if self.solution_tree:
+            for child_index in self.solution_tree[self._current][self._children]:
+                set = self.solution_tree[child_index][self._polim_set]
+                #print("check_solution_tree:")
+                #print(polim)
+                #print(set[self._polim])
+                #print(str(rotation)+' '+str(set[self._rot]))
+                if (polim == set[self._polim]) and (rotation == set[self._rot]):
+                    #print('check_solution_tree: False')
+                    return False
+        return True
+    
+    def add_to_solution_tree(self, polim, i, j, rotation, rows_involved):
+        # добавляем новый узел
+        self.solution_tree.append( 
+                                    [
+                                        [polim, i, j, rotation, rows_involved],
+                                        [], 
+                                        self._current
+                                    ]                   
+                                )
+        new_index = len(self.solution_tree) - 1
+        # добавляем child в текущий узел
+        self.solution_tree[self._current][self._children].append(new_index)
+        # обновляем текущий индекс
+        self._current = new_index
+
+    def show_tree(self):
+        for joint in self.solution_tree:
+            print(joint)
+
+    def solution_tree_go_up(self):
+        '''
+        задает _current-индекс предыдущего узла
+        '''
+        print('go up')
+        if(self._current == 0):
+            raise Error('All combinations used. Solution not found. ',True)
+        self._current = self.solution_tree[self._current][self._parent]
 
 def debug_message(s,wait = False):
     if(DEBUG):
