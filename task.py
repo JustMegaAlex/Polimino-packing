@@ -82,10 +82,10 @@ try:
             area += (poli.width + poli.height - 1)*poli.num
         else:
             area += (poli.width*poli.height)*poli.num
-        if area > table_instance.area:
-            raise Error('Total polimino area is larger than the table area!')
     print('Poliminos total area: '+str(area))
     print('Table area '+str(table_instance.area))
+    if area > table_instance.area:
+        raise Error('Total polimino area is larger than the table area!')
 
     # сортируем полимино по наибольшему размеру: по убыванию 
     # сначала прямоугольные,  затем L
@@ -110,7 +110,7 @@ try:
     table_instance.place_polimino(0, 0, POLIMINOS[ind], 0, True)
     # вывод сетки стола
     table_instance.print_table()
-    input()
+    wait()
     unpacked_polims -= 1
     # начальная клетка
     i_place = 0
@@ -142,11 +142,6 @@ try:
                     # пробуем разместить
                     if table_instance.place_polimino(i_place, j_place, polimino, rotation):
                         new_factor = table_instance.quality_factor()    # новое значение фактора
-                        #print('new_factor '+str(new_factor))
-                        #print('factor '+str(factor))
-                        #print('rows ' + str(table_instance.rows_involved))
-                        #table_instance.print_table()
-                        #wait()
                         if factor > new_factor:                 # стало лучше?
                             factor = new_factor                                 # запоминаем фактор
                             best_poli = [i_place, j_place, polimino, rotation]    # и полимино с параметрами размещения
@@ -177,13 +172,12 @@ try:
                     best_poli[2].print_image()
                     print('polis left: '+str(unpacked_polims))
                     print('Tree size: '+str(len(table_instance.solution_tree)))
-                    print('current: '+ str(table_instance._current))
                     # выводим сетку стола
                     table_instance.print_table()
                     print()
-                    # table_instance.show_tree()
                     wait()
 
+                # обнуляем переменные для нового цикла
                 best_poli = []
                 factor = factor_big_value
                 ind = 0
@@ -192,27 +186,21 @@ try:
             else:
                 i_place, j_place = search_free_cell(i_place, j_place+1)
                 if i_place < 0:
+                    # тупик
                     # отменяем последнее размещение и переходим на новую ветку  
                     table_instance.undo_placement()
                     unpacked_polims += 1
                     i_place, j_place = search_free_cell()
-                    #raise Error('Table is full',True)
                 best_poli = []
                 polimino,ind = find_next_polim()
                 
-                '''if tree_len < len(table_instance.solution_tree):
-                    tree_len = len(table_instance.solution_tree)
-                    print('polis left: '+str(unpacked_polims))
-                    print('Tree size: '+str(tree_len))
-                    print('current: '+ str(table_instance._current))
-                    # выводим сетку стола
-                    table_instance.print_table()
-                    print()
-                    #table_instance.show_tree()
-                    wait()'''
+                # периодически выводим размер дерева решений
+                if tree_len < len(table_instance.solution_tree)/100:
+                    tree_len += 1
+                    print('Tree size: '+str(tree_len*100))
                     
     # конец алгоритма: успех
-    debug_message('Solution tree size:'+str)
+    debug_message('Solution tree size:'+str(len(table_instance.solution_tree)))
     table_instance.print_table()
     print('True')
 except Error as e:

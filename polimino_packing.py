@@ -17,14 +17,14 @@ class Polimino:
     def __init__(self, width = 0, height = 0, num = 0, kind = 'R'):
         self.width = width
         self.height = height          
-        self.kind = kind    # 'R' - rectangular, 'L' - L-kind, 'S' - square
-        self.num = num      # polimino power (number of them on the table)
+        self.kind = kind    # 'R' - прямоуголные, 'L' - L-образные, 'S' - квадратные
+        self.num = num      # число таких полимино на столе
 
         self.image = {}     # образ полимино, для добавления в table
         k = 0
         if(kind == 'R'):                     # прямоугольный
             if(height==width):
-                self.kind = 'S'
+                self.kind = 'S'              # квадратный
             if self.height > self.width:
                 self.width, self.height = self.height, self.width
             for i in range(self.height):
@@ -53,7 +53,7 @@ class Polimino:
         
     def rotated(self, rotation):
         '''
-        Возвращает повернутый образ полимини
+        Возвращает образ полимино с учетом поворота
         '''
         if not rotation:
             return self.image
@@ -67,20 +67,24 @@ class Polimino:
         elif rotation==2 :# 180
             for k in range(len(self.image)):
                 # i_rot = -i + h - 1
-                rot_image[k][0] = -self.image[k][0]# + self.height - 1
+                rot_image[k][0] = -self.image[k][0]
                 # j_rot = -j + w - 1
-                rot_image[k][1] = -self.image[k][1]# + self.width - 1
+                rot_image[k][1] = -self.image[k][1]
         elif rotation==3 :# 270
             for k in range(len(self.image)):
                 # i_rot = j
                 rot_image[k][0] = self.image[k][1]
                 # j_rot = -i + h - 1
-                rot_image[k][1] = -self.image[k][0]# + self.height - 1
+                rot_image[k][1] = -self.image[k][0]
         else: 
-            raise Error('Polimino.rotated: wrong rotation argument')
+            raise Error('Polimino.rotated(): wrong rotation argument')
         return rot_image
     
 class Table:
+    '''
+    Класс реализует стол и все необходимые функции 
+    для поиска решения
+    '''
     def __init__(self, width=1, height=1, rows_involved=1, rows_packed=0):
         self.width = width                          # ширина стола
         self.height = height                        # высота стола   
@@ -103,6 +107,9 @@ class Table:
         self._rows_inv = 4
 
     def ini_table(self, width, height):
+        '''
+        Задает таблицу стола с указанными размерами
+        '''
         if width<0 or height<0:
              raise Error('Отрицательные размеры стола')
         self.table = [0]*height
@@ -137,9 +144,6 @@ class Table:
         '''
         Размещает полимино
         '''
-        #if not self.check_solution_tree(polim, rotation):
-        #    return False
-
         # вставка образа в table
         image = polim.rotated(rotation)
         # запоминаем rows_involved
@@ -147,7 +151,7 @@ class Table:
         for k in range(len(image)): # image - это словарь
             # координаты клеток,  размещаемых на столе
             ii = i + image[k][0]
-            if (ii < 0) or (ii >= self.height):
+            if (ii < 0) or (ii >= self.height):     # проверка выхода за пределы стола
                 self.undo(i, j, image, k)
                 self.rows_involved = rows_involved_mem
                 return False
@@ -158,28 +162,26 @@ class Table:
                 self.rows_involved = rows_involved_mem
                 return False
 
-            if self.table[ii][jj]:
+            if self.table[ii][jj]:          # клетка свободна?
                 self.undo(i, j, image, k)
                 self.rows_involved = rows_involved_mem
                 return False
             self.table[ii][jj] = 1
             self.rows_involved = max(ii+1, self.rows_involved)
         polim.num -= 1
-        # print('polimono placed num='+str(polim.num))
-        #self.track_list.append([polim, i, j, rotation, self.rows_involved])
-        
 
-        # добавить в дерево решения
+        # если add_to_tree = True, добавить в дерево решения
         if add_to_tree:
             self.add_to_solution_tree(polim, i, j, rotation, rows_involved_mem)
         else:
+        # если add_to_tree = False, просто записываем параметры в буфер    
             self.buffer_polim_set = [polim, i, j, rotation, rows_involved_mem]
-        #print()
-        debug_message('rows '+str(self.rows_involved),False)
-        # self.print()
         return True
     
     def undo(self, i, j, image, k):
+        '''
+        Удаляет полимино со стола
+        '''
         for kk in range(k):
             ii = i + image[kk][0]
             jj = j + image[kk][1]
@@ -200,26 +202,26 @@ class Table:
             # поднимаемся на предыдущий узел дерева 
             self.solution_tree_go_up()
         # восстанавливаем значение rows_involved
-        debug_message('undo:rows '+str(self.rows_involved),False)
         polim.num += 1
         self.undo(i, j, polim.rotated(rotation), len(polim.image))
         return i, j
 
     def check_solution_tree(self, polim, rotation):
+        '''
+        Обеспечивает неповторяемость веток решений
+        '''
         if self.solution_tree:
+            # убеждаемся, что указанной конфигурации нет в child-ах
             for child_index in self.solution_tree[self._current][self._children]:
                 set = self.solution_tree[child_index][self._polim_set]
-                #print("check_solution_tree:")
-                #print(polim)
-                #print(set[self._polim])
-                #print(str(rotation)+' '+str(set[self._rot]))
                 if (polim == set[self._polim]) and (rotation == set[self._rot]):
-                    #print('check_solution_tree: False')
                     return False
         return True
     
     def add_to_solution_tree(self, polim, i, j, rotation, rows_involved):
-        # добавляем новый узел
+        '''
+        добавляет новый узел в дерево решений
+        '''
         self.solution_tree.append( 
                                     [
                                         [polim, i, j, rotation, rows_involved],
@@ -234,14 +236,17 @@ class Table:
         self._current = new_index
 
     def show_tree(self):
+        '''
+        выводит дерево решений
+        '''
         for joint in self.solution_tree:
             print(joint)
 
     def solution_tree_go_up(self):
         '''
-        задает _current-индекс предыдущего узла
+        переводит _current-индекс на предыдущий узел дерева
         '''
-        print('go up')
+        # конец всего, замощения нет
         if(self._current == 0):
             raise Error('All combinations used. Solution not found. ',True)
         self._current = self.solution_tree[self._current][self._parent]
