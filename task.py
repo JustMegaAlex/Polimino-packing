@@ -97,10 +97,6 @@ try:
             if max(POLIMINOS[k].width, POLIMINOS[k].height)<max(POLIMINOS[k+1].width, POLIMINOS[k+1].height):
                 POLIMINOS[k], POLIMINOS[k+1] = POLIMINOS[k+1], POLIMINOS[k]
                 swapped = True
-    # print sorting results
-    print('Poliminos are sorted:')
-    [print(el.kind + str(max(el.width, el.height))) for el in POLIMINOS]
-    print('Poliminos total:'+str(unpacked_polims))
 
     # # # # # размещаем полимино
     # создание корневого узла дерева решений
@@ -123,9 +119,8 @@ try:
                                         # больше, чем Table.quality_factor может вернуть
                                         # далее при работе алгоритма чем он меньше, тем лучше 
     polimino,ind = find_next_polim()
-
-    tree_len = 0
-
+    # число комбинаций в сотнях
+    comb_num_hundr = 0
     while unpacked_polims:
         # запоминаем начальную клетку
         i_mem = i_place
@@ -141,10 +136,10 @@ try:
                         break
                     # пробуем разместить
                     if table_instance.place_polimino(i_place, j_place, polimino, rotation):
-                        new_factor = table_instance.quality_factor()    # новое значение фактора
-                        if factor > new_factor:                 # стало лучше?
-                            factor = new_factor                                 # запоминаем фактор
-                            best_poli = [i_place, j_place, polimino, rotation]    # и полимино с параметрами размещения
+                        new_factor = table_instance.quality_factor()        # новое значение фактора
+                        if factor > new_factor:                             # стало лучше?
+                            factor = new_factor                                     # запоминаем фактор
+                            best_poli = [i_place, j_place, polimino, rotation]      # и полимино с параметрами размещения
                         # отменяем размещение для последующего перебора
                         table_instance.undo_placement()
 
@@ -171,7 +166,6 @@ try:
                     print('poli choosed:')
                     best_poli[2].print_image()
                     print('polis left: '+str(unpacked_polims))
-                    print('Tree size: '+str(len(table_instance.solution_tree)))
                     # выводим сетку стола
                     table_instance.print_table()
                     print()
@@ -194,19 +188,22 @@ try:
                 best_poli = []
                 polimino,ind = find_next_polim()
                 
-                # периодически выводим размер дерева решений
-                if tree_len < len(table_instance.solution_tree)/100:
-                    tree_len += 1
-                    print('Tree size: '+str(tree_len*100))
+                # периодически выводим количество использованных комбинаций                  
+                if comb_num_hundr < table_instance.combinations_tryed//100:
+                    comb_num_hundr += 1
+                    debug_message('Combinations tryed: '+str(comb_num_hundr*100))
                     
     # конец алгоритма: успех
-    debug_message('Solution tree size:'+str(len(table_instance.solution_tree)))
+    print()
     table_instance.print_table()
+    print('Combinations tryed:'+str(table_instance.combinations_tryed))
+    print()
     print('True')
 except Error as e:
     print(e.message)
     if e.signal:
-        # конец алгоритма: не удалось
+        # конец алгоритма: решения нет
         print('Solution tree size: '+str(len(table_instance.solution_tree)))
         print('False')
-        table_instance.show_tree()
+        if(DEBUG):
+            table_instance.show_tree()

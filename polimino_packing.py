@@ -90,12 +90,13 @@ class Table:
         self.height = height                        # высота стола   
         self.rows_involved = rows_involved    # сколько рядов затронуто при размещении
         self.table = []                     # сетка стола
+        self.polim_count = 1
         self.ini_table(width, height)
         self.area = width*height
-        self.track_list = []
         self.buffer_polim_set = []
 
         self.solution_tree = []               # дерево решения
+        self.combinations_tryed = 0
         self._current = 0
         self._polim_set = 0
         self._children = 1
@@ -166,13 +167,14 @@ class Table:
                 self.undo(i, j, image, k)
                 self.rows_involved = rows_involved_mem
                 return False
-            self.table[ii][jj] = 1
+            self.table[ii][jj] = self.polim_count
             self.rows_involved = max(ii+1, self.rows_involved)
         polim.num -= 1
 
         # если add_to_tree = True, добавить в дерево решения
         if add_to_tree:
             self.add_to_solution_tree(polim, i, j, rotation, rows_involved_mem)
+            self.polim_count = self.polim_count*(self.polim_count < 9) + 1
         else:
         # если add_to_tree = False, просто записываем параметры в буфер    
             self.buffer_polim_set = [polim, i, j, rotation, rows_involved_mem]
@@ -201,6 +203,7 @@ class Table:
             [polim, i, j, rotation, self.rows_involved] = self.solution_tree[self._current][self._polim_set]
             # поднимаемся на предыдущий узел дерева 
             self.solution_tree_go_up()
+            self.polim_count = 9*(self.polim_count < 2) + self.polim_count - 1
         # восстанавливаем значение rows_involved
         polim.num += 1
         self.undo(i, j, polim.rotated(rotation), len(polim.image))
@@ -212,8 +215,8 @@ class Table:
         '''
         if self.solution_tree:
             # убеждаемся, что указанной конфигурации нет в child-ах
-            for child_index in self.solution_tree[self._current][self._children]:
-                set = self.solution_tree[child_index][self._polim_set]
+            for child in self.solution_tree[self._current][self._children]:
+                set = child[self._polim_set]
                 if (polim == set[self._polim]) and (rotation == set[self._rot]):
                     return False
         return True
@@ -231,7 +234,7 @@ class Table:
                                 )
         new_index = len(self.solution_tree) - 1
         # добавляем child в текущий узел
-        self.solution_tree[self._current][self._children].append(new_index)
+        self.solution_tree[self._current][self._children].append(self.solution_tree[new_index])
         # обновляем текущий индекс
         self._current = new_index
 
@@ -245,14 +248,22 @@ class Table:
     def solution_tree_go_up(self):
         '''
         переводит _current-индекс на предыдущий узел дерева
+        и удаляет потомков текущего узла - для оптимизации
         '''
         # конец всего, замощения нет
         if(self._current == 0):
             raise Error('All combinations used. Solution not found. ',True)
+        # удаляем потомков дерева
+        children = self.solution_tree[self._current][self._children]
+        for child in children:
+            self.solution_tree.remove(child)
+        # переходим к верхнему узлу
         self._current = self.solution_tree[self._current][self._parent]
+        # еще одна комбинация
+        self.combinations_tryed += 1
 
 def debug_message(s,wait = False):
     if(DEBUG):
-        print(s)
+        print('Debug message: '+s)
         if(wait):
             input()
