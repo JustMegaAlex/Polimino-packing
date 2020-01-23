@@ -111,7 +111,7 @@ try:
     # начальная клетка
     i_place = 0
     j_place = POLIMINOS[ind].width
-    # полимино, при котором фактор будет размещения наименьший
+    # полимино, при котором фактор размещения будет наименьший
     best_poli = []      # в списке будет сам полимино и параметры размещения 
     # задаем начальное значение фактора размещения
     factor_big_value = table_instance.width * table_instance.height
@@ -203,7 +203,7 @@ except Error as e:
     print(e.message)
     if e.signal:
         # конец алгоритма: решения нет
-        print('Solution tree size: '+str(len(table_instance.solution_tree)))
+        print('Solution tree size: ' + str(len(table_instance.solution_tree)))
         print('False')
         if(DEBUG):
             table_instance.show_tree()
