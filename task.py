@@ -1,6 +1,7 @@
 #!/usr/bin/env python3.6
 # -*- coding: UTF-8 -*-
 
+from time import time
 from polimino_packing import Error, Polimino, Table, debug_message
 
 try:
@@ -8,7 +9,7 @@ try:
 except:
     print('Warning: import ini_task_list failed, default one used')
     DEBUG = False
-    SHOW = False
+    SHOW = True
     ini_task_list = [
         [4, 5],             # размеры стола[w, h]    
         
@@ -52,6 +53,8 @@ def find_next_polim(ind = 0):
 def wait():
     print('Enter any key to continue')
     input()
+
+t_start = time()
 
 try:
     # создаем экземпляр стола
@@ -106,7 +109,6 @@ try:
     table_instance.place_polimino(0, 0, POLIMINOS[ind], 0, True)
     # вывод сетки стола
     table_instance.print_table()
-    wait()
     unpacked_polims -= 1
     # начальная клетка
     i_place = 0
@@ -207,3 +209,5 @@ except Error as e:
         print('False')
         if(DEBUG):
             table_instance.show_tree()
+
+print('time:', time() - t_start)
